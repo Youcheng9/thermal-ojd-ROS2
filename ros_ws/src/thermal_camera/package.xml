@@ -3,9 +3,9 @@
 <package format="3">
   <name>thermal_camera</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="youch@todo.todo">youch</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Thermal Object Detection with ROS2</description>
+  <maintainer email="youchengtaing9999@gmail.com">Youcheng</maintainer>
+  <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
