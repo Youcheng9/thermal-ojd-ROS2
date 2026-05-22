@@ -13,10 +13,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='youch',
-    maintainer_email='youch@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Youcheng',
+    maintainer_email='youchengtaing9999@gmail.com',
+    description='Thermal Object Detection with ROS2',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',
