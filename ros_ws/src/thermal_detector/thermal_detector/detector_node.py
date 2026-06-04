@@ -5,6 +5,12 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from std_msgs.msg import String
 
+import cv2
+import numpy as np
+import torch
+from ultralytics import YOLO
+
+
 
 class ThermalDetectorNode(Node):
     def __init__(self):
@@ -27,6 +33,16 @@ class ThermalDetectorNode(Node):
             '/thermal/detections',
             10
         )
+        
+        
+    def load_model(self):
+        # model inference block
+        try:
+            self.model = YOLO(model_path)
+        except Exception as e:
+            self.get_logger().error(f"Error loading model: {e}")
+        
+        
         
     def image_callback(self, msg):
         try:
