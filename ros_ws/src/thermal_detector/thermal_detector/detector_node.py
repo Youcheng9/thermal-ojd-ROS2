@@ -7,7 +7,7 @@ from std_msgs.msg import String
 
 import cv2
 import numpy as np
-import torch
+# import torch
 from ultralytics import YOLO
 
 
