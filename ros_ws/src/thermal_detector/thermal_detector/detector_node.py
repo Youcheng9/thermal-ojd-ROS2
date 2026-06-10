@@ -37,7 +37,23 @@ class ThermalDetectorNode(Node):
             '/thermal/detections',
             10
         )
+        
+        self.overlay_pub = self.create_publisher(
+            Image,
+            '/thermal/detection_overlay',
+            10
+        )
+        
+        def publish_overlay(self, detections, frame):
+            overlay = detections[0].plot()
 
+            overlay_msg = self.bridge.cv2_to_imgmsg(
+                overlay,
+                encoding='bgr8'
+            )
+            
+            overlay_sg.header = header
+            self.overlay_pub.publish(overlay_msg)
         
     def load_model(self):
         # model inference block
@@ -91,6 +107,7 @@ class ThermalDetectorNode(Node):
                 return
             
             self.publish_detections(results)
+            self.publish_overlay(results, msg.header)
             
         except Exception as e:
             self.get_logger().error(f'Detection error: {e}')
