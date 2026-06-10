@@ -42,7 +42,20 @@ class ThermalDetectorNode(Node):
         except Exception as e:
             self.get_logger().error(f"Error loading model: {e}")
         
+    def inference(self, frame):
+        result = self.model(frame)
+        return result
+
+    def publish_detections(self, detections):
+        result = detections[0]
         
+        for box in result.boxes:
+            cls_id = int(box.cls[0])
+            conf = float(box.conf[0])
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            self.get_logger().info(
+                f"Detected class {cls_id} with confidence {conf:.2f} at [{x1}, {y1}, {x2}, {y2}]"
+                )
         
     def image_callback(self, msg):
         try:
@@ -51,11 +64,11 @@ class ThermalDetectorNode(Node):
                 desired_encoding='bgr8'
             )
             
-            self.get_logger().info(
-                f"Received frame: {frame.shape}"
-            )
+            results = self.inference(frame)
+            self.publish_detections(results)
+            
         except Exception as e:
-            self.get_logger().error(f'Could not convert image: {e}')
+            self.get_logger().error(f'Detection error: {e}')
             return
         
         msg_out = String()
