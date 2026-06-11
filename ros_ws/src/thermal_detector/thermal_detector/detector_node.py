@@ -44,6 +44,20 @@ class ThermalDetectorNode(Node):
             10
         )
         
+        self.declare_parameter(
+            "model_path",
+            "model/best.pt"
+        )
+        
+        self.declare_parameter(
+            "confidence_threshold",
+            0.25
+        )
+        
+        self.model_path = self.get_parameter("model_path").value
+        self.confidence_threshold = self.get_parameter("confidence_threshold").value
+   
+
         def publish_overlay(self, detections, frame):
             overlay = detections[0].plot()
 
