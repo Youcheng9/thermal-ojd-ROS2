@@ -3,12 +3,12 @@ from rclpy.node import Node
 
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from std_msgs.msg import String
 
 import cv2
 import numpy as np
-# import torch
 from ultralytics import YOLO
+
+from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithPose
 
 """
 Thermal Detector Node
@@ -33,7 +33,7 @@ class ThermalDetectorNode(Node):
         self.get_logger().info("Thermal Detector Node has been started.")
         
         self.detection_pub = self.create_publisher(
-            String,
+            Detection2DArray,
             '/thermal/detections',
             10
         )
@@ -72,27 +72,38 @@ class ThermalDetectorNode(Node):
         result = self.model(frame)
         return result
 
-    def publish_detections(self, detections):
+    def publish_detections(self, detections, header):
         result = detections[0]
-        record = []
+        
+        detection_array = Detection2DArray()
+        detection_array.header = header
+        
         
         for box in result.boxes:
             cls_id = int(box.cls[0])
             conf = float(box.conf[0])
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             
-            message = (
+            detection = Detection2D()
+            detection.bbox.center.x = (x1 + x2) / 2
+            detection.bbox.center.y = (y1 + y2) / 2
+            detection.bbox.size_x = x2 - x1
+            detection.bbox.size_y = y2 - y1
+            
+            hypothesis = ObjectHypothesisWithPose()
+            hypothesis.id = cls_id
+            hypothesis.score = conf
+            
+            detection.results.append(hypothesis)
+            detection_array.detections.append(detection)
+            
+            self.get_logger().info(
                 f"class: {cls_id}, confidence: {conf:.2f}, "
                 f"bounding box: [{x1}, {y1}, {x2}, {y2}]"
             )
-            record.append(message)
-            self.get_logger().info(
-                message
-                )
             
-            msg_out = String()
-            msg_out.data = "\n".join(record) if record else "No detections"
-            self.detection_pub.publish(msg_out)
+            
+            self.detection_pub.publish(detection_array)
 
     def image_callback(self, msg):
         try:
@@ -106,7 +117,7 @@ class ThermalDetectorNode(Node):
             if results is None:
                 return
             
-            self.publish_detections(results)
+            self.publish_detections(results, msg.header)
             self.publish_overlay(results, msg.header)
             
         except Exception as e:
