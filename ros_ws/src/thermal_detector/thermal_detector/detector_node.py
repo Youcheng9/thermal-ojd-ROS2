@@ -7,6 +7,7 @@ from cv_bridge import CvBridge
 import cv2
 import numpy as np
 from ultralytics import YOLO
+from pathlib import Path
 
 from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithPose
 
@@ -46,44 +47,52 @@ class ThermalDetectorNode(Node):
         
         self.declare_parameter(
             "model_path",
-            "model/best.pt"
+            ""
         )
         
         self.declare_parameter(
             "confidence_threshold",
-            0.25
+            0.31
         )
         
         self.model_path = self.get_parameter("model_path").value
         self.confidence_threshold = self.get_parameter("confidence_threshold").value
    
 
-        def publish_overlay(self, detections, frame):
-            overlay = detections[0].plot()
+    def publish_overlay(self, detections, frame):
+        overlay = detections[0].plot()
 
-            overlay_msg = self.bridge.cv2_to_imgmsg(
-                overlay,
-                encoding='bgr8'
-            )
-            
-            overlay_sg.header = header
-            self.overlay_pub.publish(overlay_msg)
+        overlay_msg = self.bridge.cv2_to_imgmsg(
+            overlay,
+            encoding='bgr8'
+        )
+        
+        overlay_sg.header = header
+        self.overlay_pub.publish(overlay_msg)
         
     def load_model(self):
         # model inference block
         try:
-            self.model = YOLO(model_path)
-            self.get_logger().info("Model loaded successfully.")
-            return self.model
+            model_file = Path(self.model_path)
+
+            if not model_file.exists():
+                raise FileNotFoundError(f"Model file not found: {model_file}")
+
+            self.get_logger().info(f"Loading model: {model_file}")
+            model = YOLO(str(model_file))
+            self.get_logger().info("Model loaded successfully")
+
+            return model
         except Exception as e:
             self.get_logger().error(f"Error loading model: {e}")
+            return None
         
     def inference(self, frame):
         if self.model is None:
             self.get_logger().error("Model is not loaded.")
             return None
         
-        result = self.model(frame)
+        result = self.model(frame, verbose=False)
         return result
 
     def publish_detections(self, detections, header):
@@ -98,6 +107,9 @@ class ThermalDetectorNode(Node):
             conf = float(box.conf[0])
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             
+            if conf<self.confidence_threshold:
+                continue
+            
             detection = Detection2D()
             detection.bbox.center.x = (x1 + x2) / 2
             detection.bbox.center.y = (y1 + y2) / 2
@@ -105,8 +117,8 @@ class ThermalDetectorNode(Node):
             detection.bbox.size_y = y2 - y1
             
             hypothesis = ObjectHypothesisWithPose()
-            hypothesis.id = cls_id
-            hypothesis.score = conf
+            hypothesis.hyposthesis.class_id = str(cls_id)
+            hypothesis.hypothesis.score = conf
             
             detection.results.append(hypothesis)
             detection_array.detections.append(detection)

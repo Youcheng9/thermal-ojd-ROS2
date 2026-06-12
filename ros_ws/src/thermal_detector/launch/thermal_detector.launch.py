@@ -11,7 +11,7 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 {'model_path': 'model/best.pt'},
-                {'confidence_threshold': 0.25},
+                {'confidence_threshold': 0.31},
                 {'image_topic': '/thermal/image_raw'},
                 {'detection_topic': '/thermal/detections'},
                 {'overlay_topic': '/thermal/detection_overlay'},
